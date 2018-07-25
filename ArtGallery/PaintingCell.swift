@@ -1,11 +1,12 @@
 //
-//  ViewController.swift
+//  ImageCell.swift
 //  ArtGallery
 //
-//  Created by Spencer Curtis on 7/20/18.
+//  Created by William Bundy on 7/25/18.
 //  Copyright © 2018 Lambda School. All rights reserved.
 //
 
+import Foundation
 import UIKit
 
 protocol PaintingCellDelegate: class {
@@ -38,7 +39,7 @@ class PaintingCell: UITableViewCell
 	weak var delegate:PaintingCellDelegate!
 	@IBOutlet weak var likeButton: UIButton!
 	@IBOutlet weak var paintingView: UIImageView!
-	
+
 	func updateViews()
 	{
 		paintingView.image = painting.image
@@ -58,7 +59,6 @@ class PaintingCell: UITableViewCell
 }
 
 class PaintingSource: NSObject, UITableViewDataSource, UITableViewDelegate, PaintingCellDelegate
-	
 {
 	var controller:PaintingController!
 	var table:UITableView!
@@ -67,8 +67,7 @@ class PaintingSource: NSObject, UITableViewDataSource, UITableViewDelegate, Pain
 	{
 		self.controller = controller
 	}
-	
-	
+
 	func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell
 	{
 		let defaultCell = tableView.dequeueReusableCell(withIdentifier: "PaintingCell")
@@ -76,20 +75,20 @@ class PaintingSource: NSObject, UITableViewDataSource, UITableViewDelegate, Pain
 		cell.delegate = self
 		cell.painting = controller.paintings[indexPath.row]
 		cell.index = indexPath.row
-		
+
 		return cell
 	}
-	
+
 	func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat
 	{
 		return controller.paintings[indexPath.row].image.getScreenSize(padding: 32).0.height + 80
 	}
-	
+
 	func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int
 	{
 		return controller.paintings.count
 	}
-	
+
 	func onLike(_ cell: PaintingCell)
 	{
 		let liked = controller.paintings[cell.index].isLiked
@@ -98,57 +97,6 @@ class PaintingSource: NSObject, UITableViewDataSource, UITableViewDelegate, Pain
 		table.reloadRows(at:[IndexPath(row:cell.index, section:0)], with:.none)
 		UIView.setAnimationsEnabled(true)
 	}
-
 }
 
-
-class PaintingListView: UIViewController
-{
-	@IBOutlet weak var table: UITableView!
-	var source:PaintingSource
-	
-	required init?(coder aDecoder: NSCoder) {
-		source = PaintingSource(AppGlobal.paintingController)
-		super.init(coder:aDecoder);
-	}
-	
-	override func viewDidLoad() {
-        super.viewDidLoad()
-        // Do any additional setup after loading the view, typically from a nib.
-		guard table != nil else {return}
-		source.table = table
-		table.dataSource = source
-		table.delegate = source
-		table.reloadData()
-    }
-	
-	override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-		if segue.identifier == "PaintingSegue" {
-			let dest = segue.destination as? PaintingFullscreenView
-			let painting = sender as? PaintingCell
-			dest?.painting = painting?.painting
-		}
-	}
-}
-
-class PaintingFullscreenView: UIViewController
-{
-	var painting:Painting!
-	@IBOutlet weak var paintingView: UIImageView!
-	
-	override func viewDidLoad() {
-		super.viewDidLoad()
-		guard painting != nil, paintingView != nil else {return}
-		paintingView.image = painting.image
-		let bounds:(frame:CGRect, center:CGPoint) = painting.image.getScreenSize(padding:DefaultPadding, scale:1)
-		paintingView.frame = bounds.frame
-		paintingView.center = bounds.center
-		paintingView.center.y += 60
-	}
-	
-	@IBAction func donePressed(_ sender: Any) {
-		dismiss(animated: true, completion: {() in})
-	}
-	
-}
 
