@@ -16,14 +16,15 @@ let DefaultPadding:CGFloat = 32
 let HalfPadding:CGFloat = DefaultPadding / 2
 
 extension UIImage {
-	func  getScreenSize(padding:CGFloat) -> (frame: CGRect, center:CGPoint)
+	func  getScreenSize(padding:CGFloat, scale:CGFloat=0.5) -> (frame: CGRect, center:CGPoint)
 	{
 		let hpadding = padding / 2
-		let sw = UIScreen.main.bounds.width - padding
+		let totalWidth = UIScreen.main.bounds.width
+		let sw = totalWidth * scale - padding
 		let ratio = sw / size.width
 		let finalWidth = sw
 		let finalHeight = ratio * size.height
-		return  (CGRect(x:0, y:0, width:finalWidth, height:finalHeight), CGPoint(x:finalWidth/2 + hpadding, y:finalHeight/2 + hpadding))
+		return  (CGRect(x:0, y:0, width:finalWidth, height:finalHeight), CGPoint(x:totalWidth/2, y:finalHeight/2 + hpadding))
 	}
 }
 class PaintingCell: UITableViewCell
@@ -45,8 +46,7 @@ class PaintingCell: UITableViewCell
 		paintingView.frame = bounds.frame
 		paintingView.center = bounds.center
 
-		likeButton.titleLabel!.text = painting.isLiked ? "Unlike" : "Like";
-		likeButton.frame = CGRect(x:0, y:0, width:bounds.frame.width, height:30)
+		likeButton.setTitle(painting.isLiked ? "Unlike" : "Like", for:UIControlState.normal)
 		likeButton.center = CGPoint(x:bounds.center.x, y: bounds.center.y + bounds.frame.height/2 + likeButton.frame.height/2 + HalfPadding)
 	}
 
@@ -94,20 +94,24 @@ class PaintingSource: NSObject, UITableViewDataSource, UITableViewDelegate, Pain
 	{
 		let liked = controller.paintings[cell.index].isLiked
 		controller.paintings[cell.index].isLiked = !liked
+		UIView.setAnimationsEnabled(false)
 		table.reloadRows(at:[IndexPath(row:cell.index, section:0)], with:.none)
+		UIView.setAnimationsEnabled(true)
 	}
 
 }
 
 
-class PaintingView: UIViewController
+class PaintingListView: UIViewController
 {
+	@IBOutlet weak var table: UITableView!
 	var source:PaintingSource
+	
 	required init?(coder aDecoder: NSCoder) {
 		source = PaintingSource(AppGlobal.paintingController)
 		super.init(coder:aDecoder);
 	}
-	@IBOutlet weak var table: UITableView!
+	
 	override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
@@ -117,13 +121,34 @@ class PaintingView: UIViewController
 		table.delegate = source
 		table.reloadData()
     }
-
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
 	
+	override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+		if segue.identifier == "PaintingSegue" {
+			let dest = segue.destination as? PaintingFullscreenView
+			let painting = sender as? PaintingCell
+			dest?.painting = painting?.painting
+		}
+	}
+}
 
-
+class PaintingFullscreenView: UIViewController
+{
+	var painting:Painting!
+	@IBOutlet weak var paintingView: UIImageView!
+	
+	override func viewDidLoad() {
+		super.viewDidLoad()
+		guard painting != nil, paintingView != nil else {return}
+		paintingView.image = painting.image
+		let bounds:(frame:CGRect, center:CGPoint) = painting.image.getScreenSize(padding:DefaultPadding, scale:1)
+		paintingView.frame = bounds.frame
+		paintingView.center = bounds.center
+		paintingView.center.y += 60
+	}
+	
+	@IBAction func donePressed(_ sender: Any) {
+		dismiss(animated: true, completion: {() in})
+	}
+	
 }
 
